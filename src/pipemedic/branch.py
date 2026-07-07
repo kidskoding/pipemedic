@@ -17,9 +17,13 @@ def _execute(sql: str, settings: Settings) -> str:
 
 
 def create_branch(table: str, settings: Settings) -> str:
-    _execute(f"ALTER TABLE {table} CREATE BRANCH {BRANCH_NAME}", settings)
+    state = _execute(f"ALTER TABLE {table} CREATE BRANCH {BRANCH_NAME}", settings)
+    if "SUCCEEDED" not in state:
+        raise RuntimeError(f"CREATE BRANCH on {table} did not succeed: {state}")
     return BRANCH_NAME
 
 
 def drop_branch(table: str, branch: str, settings: Settings) -> None:
-    _execute(f"ALTER TABLE {table} DROP BRANCH {branch}", settings)
+    state = _execute(f"ALTER TABLE {table} DROP BRANCH {branch}", settings)
+    if "SUCCEEDED" not in state:
+        raise RuntimeError(f"DROP BRANCH on {table} did not succeed: {state}")

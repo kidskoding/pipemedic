@@ -13,4 +13,9 @@ def on_failure_callback(context: dict) -> None:
     params = (context.get("params") or {}).get("pipemedic")
     if not params:
         return  # task not opted in; do nothing
-    run_fix(params["project_dir"], params["model"], Settings.from_env())
+    project_dir = params.get("project_dir")
+    model = params.get("model")
+    if not project_dir or not model:
+        print(f"pipemedic: on_failure_callback missing project_dir/model in params: {params}")
+        return
+    run_fix(project_dir, model, Settings.from_env())

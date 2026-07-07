@@ -41,7 +41,12 @@ def open_pr(fix: Fix, proof: ValidationResult, model_name: str, settings: Settin
     base = repo.default_branch
     head = f"pipemedic/fix-{model_name}"
     sha = repo.get_branch(base).commit.sha
-    repo.create_git_ref(ref=f"refs/heads/{head}", sha=sha)
+    try:
+        repo.create_git_ref(ref=f"refs/heads/{head}", sha=sha)
+    except GithubException:
+        # stale ref from a prior failed/aborted run — clear it and retry once
+        repo.get_git_ref(f"heads/{head}").delete()
+        repo.create_git_ref(ref=f"refs/heads/{head}", sha=sha)
 
     for edit in fix.edits:
         message = f"pipemedic: fix {model_name} ({edit.path})"
