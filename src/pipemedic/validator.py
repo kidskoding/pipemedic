@@ -37,6 +37,7 @@ def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) ->
         # profiles.yml should template schema from this env var; see README snippet
         prior_schema = os.environ.get("DBT_MEDIC_SCHEMA")
         os.environ["DBT_MEDIC_SCHEMA"] = settings.dev_schema
+        prior_branch = os.environ.get("DBT_MEDIC_BRANCH")
         branch_name = None
         try:
             if settings.use_iceberg_branch:
@@ -70,3 +71,7 @@ def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) ->
                 os.environ.pop("DBT_MEDIC_SCHEMA", None)
             else:
                 os.environ["DBT_MEDIC_SCHEMA"] = prior_schema
+            if prior_branch is None:
+                os.environ.pop("DBT_MEDIC_BRANCH", None)
+            else:
+                os.environ["DBT_MEDIC_BRANCH"] = prior_branch

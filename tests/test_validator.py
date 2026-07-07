@@ -115,3 +115,41 @@ def test_validate_removes_env_var_if_previously_unset(tmp_path, monkeypatch):
     validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
 
     assert "DBT_MEDIC_SCHEMA" not in os.environ
+
+
+def test_validate_restores_prior_branch_env_var(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    calls = []
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
+    monkeypatch.setattr(
+        "pipemedic.branch.create_branch",
+        lambda table, settings: calls.append("create") or "pipemedic_fix",
+    )
+    monkeypatch.setattr(
+        "pipemedic.branch.drop_branch",
+        lambda table, branch, settings: calls.append("drop"),
+    )
+    monkeypatch.setenv("DBT_MEDIC_BRANCH", "previous_branch")
+
+    validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=True, dev_schema="dev"))
+
+    assert os.environ.get("DBT_MEDIC_BRANCH") == "previous_branch"
+
+
+def test_validate_removes_branch_env_var_if_previously_unset(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    calls = []
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
+    monkeypatch.setattr(
+        "pipemedic.branch.create_branch",
+        lambda table, settings: calls.append("create") or "pipemedic_fix",
+    )
+    monkeypatch.setattr(
+        "pipemedic.branch.drop_branch",
+        lambda table, branch, settings: calls.append("drop"),
+    )
+    monkeypatch.delenv("DBT_MEDIC_BRANCH", raising=False)
+
+    validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=True, dev_schema="dev"))
+
+    assert "DBT_MEDIC_BRANCH" not in os.environ
