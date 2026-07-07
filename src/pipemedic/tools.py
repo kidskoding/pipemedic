@@ -61,15 +61,34 @@ def get_schema(table: str) -> str:
     return _execute_sql(f"DESCRIBE TABLE {table}")
 
 
+_READ_ONLY_PREFIXES = ("SELECT", "WITH", "DESCRIBE", "SHOW", "EXPLAIN")
+
+
+def _strip_leading_comments(sql: str) -> str:
+    """Drop leading whitespace/`--`/`/* */` comments to find the real first statement."""
+    s = sql.lstrip()
+    while True:
+        if s.startswith("--"):
+            s = s.split("\n", 1)[1].lstrip() if "\n" in s else ""
+        elif s.startswith("/*"):
+            s = s.split("*/", 1)[1].lstrip() if "*/" in s else ""
+        else:
+            return s
+
+
 @tool
 def run_sql(query: str) -> str:
     """Run a read-only diagnostic query against the warehouse (row samples, counts)."""
+    if not _strip_leading_comments(query).upper().startswith(_READ_ONLY_PREFIXES):
+        return "ERROR: run_sql is read-only"
     return _execute_sql(query)
 
 
 @tool
 def edit_file(path: str, new_content: str) -> str:
     """Stage an edit to a dbt project file as part of the proposed fix. Does not touch disk."""
+    if _resolve(path) is None:
+        return "ERROR: path escapes the project directory"
     _ctx["staged"][path] = new_content
     return f"staged edit to {path} ({len(new_content)} chars)"
 

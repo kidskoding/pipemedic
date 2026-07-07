@@ -28,6 +28,12 @@ def test_edit_file_stages(project):
     assert (project / "models" / "stg_orders.sql").read_text() == "select 1"
 
 
+def test_edit_file_blocks_traversal(project):
+    out = tools.edit_file.invoke({"path": "../../evil", "new_content": "x"})
+    assert out.startswith("ERROR")
+    assert tools.staged_edits() == {}
+
+
 def test_configure_resets_staging(project):
     tools.edit_file.invoke({"path": "a.sql", "new_content": "x"})
     tools.configure(str(project), Settings())
@@ -51,3 +57,17 @@ def test_get_schema_describes_table(project, monkeypatch):
     monkeypatch.setattr(tools, "_execute_sql", lambda s: f"RAN: {s}")
     out = tools.get_schema.invoke({"table": "shop.orders"})
     assert out == "RAN: DESCRIBE TABLE shop.orders"
+
+
+def test_run_sql_rejects_write_statement(project, monkeypatch):
+    called = []
+    monkeypatch.setattr(tools, "_execute_sql", lambda s: called.append(s) or "ignored")
+    out = tools.run_sql.invoke({"query": "DROP TABLE shop.orders"})
+    assert out.startswith("ERROR")
+    assert called == []
+
+
+def test_run_sql_allows_select(project, monkeypatch):
+    monkeypatch.setattr(tools, "_execute_sql", lambda s: f"RAN: {s}")
+    out = tools.run_sql.invoke({"query": "  -- comment\nselect 1"})
+    assert out.startswith("RAN:")

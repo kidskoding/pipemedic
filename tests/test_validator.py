@@ -17,6 +17,9 @@ def _project(tmp_path):
     (tmp_path / "models").mkdir()
     (tmp_path / "models" / "stg_orders.sql").write_text("select 1")
     (tmp_path / "dbt_project.yml").write_text("name: warehouse")
+    (tmp_path / "profiles.yml").write_text(
+        'warehouse:\n  target: dev\n  outputs:\n    dev:\n      schema: "{{ env_var(\'PIPEMEDIC_SCHEMA\') }}"\n'
+    )
     return tmp_path
 
 
@@ -95,6 +98,32 @@ def test_validate_drops_branch_on_build_failure(tmp_path, monkeypatch):
     )
     assert result.passed is False
     assert calls == ["create", "drop"]
+
+
+def test_validate_refuses_when_profiles_missing_templating(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    (project / "profiles.yml").write_text("warehouse:\n  target: dev\n  outputs:\n    dev:\n      schema: prod\n")
+    called = []
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: called.append(args) or (True, "ok"))
+
+    result = validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
+
+    assert result.passed is False
+    assert "PIPEMEDIC_SCHEMA" in result.logs
+    assert called == []
+
+
+def test_validate_refuses_when_profiles_missing_entirely(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    (project / "profiles.yml").unlink()
+    called = []
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: called.append(args) or (True, "ok"))
+
+    result = validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
+
+    assert result.passed is False
+    assert "PIPEMEDIC_SCHEMA" in result.logs
+    assert called == []
 
 
 def test_validate_restores_prior_env_var(tmp_path, monkeypatch):

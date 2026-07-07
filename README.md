@@ -110,6 +110,26 @@ Settings are read from environment variables, all prefixed `PIPEMEDIC_`:
 | `PIPEMEDIC_USE_ICEBERG_BRANCH` | `use_iceberg_branch` | `true` |
 | `PIPEMEDIC_MAX_RETRIES` | `max_retries` | `3` |
 
+## Safety: dev-schema isolation
+
+The validator refuses to run `dbt build` unless your project's `profiles.yml`
+templates its schema from the `PIPEMEDIC_SCHEMA` env var — otherwise a
+misconfigured profile could point the agent's build straight at prod. Your
+target should look like:
+
+```yaml
+warehouse:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      schema: "{{ env_var('PIPEMEDIC_SCHEMA') }}"
+      # ... host/token/etc.
+```
+
+If `profiles.yml` is missing or doesn't reference `PIPEMEDIC_SCHEMA`,
+`validate()` returns a failed `ValidationResult` without invoking dbt.
+
 ## Usage
 
 ### CLI

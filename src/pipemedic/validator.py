@@ -34,7 +34,17 @@ def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) ->
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(edit.new_content)
 
-        # profiles.yml should template schema from this env var; see README snippet
+        # profiles.yml must template schema from PIPEMEDIC_SCHEMA — see README
+        # "Safety: dev-schema isolation" — refuse to run otherwise, prod is one
+        # misconfigured profiles.yml away from being the dbt build target.
+        profiles = work / "profiles.yml"
+        if not profiles.exists() or "PIPEMEDIC_SCHEMA" not in profiles.read_text():
+            return ValidationResult(
+                passed=False,
+                logs="profiles.yml does not template schema from PIPEMEDIC_SCHEMA — "
+                "refusing to run against an unknown target/prod",
+            )
+
         prior_schema = os.environ.get("PIPEMEDIC_SCHEMA")
         os.environ["PIPEMEDIC_SCHEMA"] = settings.dev_schema
         prior_branch = os.environ.get("PIPEMEDIC_BRANCH")
