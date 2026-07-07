@@ -35,9 +35,9 @@ def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) ->
             dest.write_text(edit.new_content)
 
         # profiles.yml should template schema from this env var; see README snippet
-        prior_schema = os.environ.get("DBT_MEDIC_SCHEMA")
-        os.environ["DBT_MEDIC_SCHEMA"] = settings.dev_schema
-        prior_branch = os.environ.get("DBT_MEDIC_BRANCH")
+        prior_schema = os.environ.get("PIPEMEDIC_SCHEMA")
+        os.environ["PIPEMEDIC_SCHEMA"] = settings.dev_schema
+        prior_branch = os.environ.get("PIPEMEDIC_BRANCH")
         branch_name = None
         try:
             if settings.use_iceberg_branch:
@@ -45,7 +45,7 @@ def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) ->
 
                 table = f"{settings.dev_schema}.{model_name}"
                 branch_name = branch_ops.create_branch(table, settings)
-                os.environ["DBT_MEDIC_BRANCH"] = branch_name
+                os.environ["PIPEMEDIC_BRANCH"] = branch_name
             try:
                 passed, logs = _run_dbt(
                     [
@@ -68,10 +68,10 @@ def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) ->
             return ValidationResult(passed=passed, logs=logs, branch_name=branch_name)
         finally:
             if prior_schema is None:
-                os.environ.pop("DBT_MEDIC_SCHEMA", None)
+                os.environ.pop("PIPEMEDIC_SCHEMA", None)
             else:
-                os.environ["DBT_MEDIC_SCHEMA"] = prior_schema
+                os.environ["PIPEMEDIC_SCHEMA"] = prior_schema
             if prior_branch is None:
-                os.environ.pop("DBT_MEDIC_BRANCH", None)
+                os.environ.pop("PIPEMEDIC_BRANCH", None)
             else:
-                os.environ["DBT_MEDIC_BRANCH"] = prior_branch
+                os.environ["PIPEMEDIC_BRANCH"] = prior_branch

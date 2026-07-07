@@ -28,7 +28,7 @@ def test_validate_applies_edits_and_builds(tmp_path, monkeypatch):
         # the edited file must be present in the temp copy dbt builds
         pdir = args[args.index("--project-dir") + 1]
         seen["edited"] = open(os.path.join(pdir, "models/stg_orders.sql")).read()
-        seen["schema"] = os.environ.get("DBT_MEDIC_SCHEMA")
+        seen["schema"] = os.environ.get("PIPEMEDIC_SCHEMA")
         seen["select"] = args[args.index("--select") + 1]
         return True, "ok"
 
@@ -100,21 +100,21 @@ def test_validate_drops_branch_on_build_failure(tmp_path, monkeypatch):
 def test_validate_restores_prior_env_var(tmp_path, monkeypatch):
     project = _project(tmp_path)
     monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
-    monkeypatch.setenv("DBT_MEDIC_SCHEMA", "previous_value")
+    monkeypatch.setenv("PIPEMEDIC_SCHEMA", "previous_value")
 
     validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
 
-    assert os.environ.get("DBT_MEDIC_SCHEMA") == "previous_value"
+    assert os.environ.get("PIPEMEDIC_SCHEMA") == "previous_value"
 
 
 def test_validate_removes_env_var_if_previously_unset(tmp_path, monkeypatch):
     project = _project(tmp_path)
     monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
-    monkeypatch.delenv("DBT_MEDIC_SCHEMA", raising=False)
+    monkeypatch.delenv("PIPEMEDIC_SCHEMA", raising=False)
 
     validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
 
-    assert "DBT_MEDIC_SCHEMA" not in os.environ
+    assert "PIPEMEDIC_SCHEMA" not in os.environ
 
 
 def test_validate_restores_prior_branch_env_var(tmp_path, monkeypatch):
@@ -129,11 +129,11 @@ def test_validate_restores_prior_branch_env_var(tmp_path, monkeypatch):
         "pipemedic.branch.drop_branch",
         lambda table, branch, settings: calls.append("drop"),
     )
-    monkeypatch.setenv("DBT_MEDIC_BRANCH", "previous_branch")
+    monkeypatch.setenv("PIPEMEDIC_BRANCH", "previous_branch")
 
     validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=True, dev_schema="dev"))
 
-    assert os.environ.get("DBT_MEDIC_BRANCH") == "previous_branch"
+    assert os.environ.get("PIPEMEDIC_BRANCH") == "previous_branch"
 
 
 def test_validate_removes_branch_env_var_if_previously_unset(tmp_path, monkeypatch):
@@ -148,8 +148,8 @@ def test_validate_removes_branch_env_var_if_previously_unset(tmp_path, monkeypat
         "pipemedic.branch.drop_branch",
         lambda table, branch, settings: calls.append("drop"),
     )
-    monkeypatch.delenv("DBT_MEDIC_BRANCH", raising=False)
+    monkeypatch.delenv("PIPEMEDIC_BRANCH", raising=False)
 
     validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=True, dev_schema="dev"))
 
-    assert "DBT_MEDIC_BRANCH" not in os.environ
+    assert "PIPEMEDIC_BRANCH" not in os.environ

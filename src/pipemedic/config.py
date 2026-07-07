@@ -4,7 +4,7 @@ import os
 
 from pydantic import BaseModel
 
-_PREFIX = "DBT_MEDIC_"
+_PREFIX = "PIPEMEDIC_"
 
 
 class Settings(BaseModel):
