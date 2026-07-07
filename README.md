@@ -23,24 +23,19 @@ flowchart TB
     end
 
     subgraph RUNTIME ["Agent runtime: LangGraph state machine"]
-        direction TB
+        direction LR
         COLLECT["collect<br/>error, compiled SQL, manifest,<br/>lineage, source schemas"]
-
-        subgraph LLM ["Claude (Anthropic API) — tool-use loop"]
-            direction LR
-            T1(["read_file"])
-            T2(["get_schema"])
-            T3(["run_sql"])
-            T4(["edit_file"])
-        end
-
-        COLLECT --> LLM
+        AGENT["Claude (Anthropic API)<br/>tool-use loop"]
+        TOOLS(["read_file &middot; get_schema<br/>run_sql &middot; edit_file"])
+        COLLECT --> AGENT
+        AGENT -.- TOOLS
     end
 
     subgraph DBX ["Warehouse: Databricks / Apache Iceberg"]
         direction LR
         BR["validate<br/>dbt build + dbt test on<br/>isolated Iceberg branch"]
         PROD["prod tables<br/>never touched by the agent"]
+        BR ~~~ PROD
     end
 
     subgraph GH ["Delivery: GitHub"]
@@ -53,8 +48,7 @@ flowchart TB
     ESC["escalate to human"]
 
     AF --> COLLECT
-    LLM -- "proposed fix" --> BR
-    BR -- "fail (attempt < 3), error fed back" --> LLM
+    AGENT <-- "proposed fix /<br/>on failure, error fed back<br/>(max 3 attempts)" --> BR
     BR -- "tests pass" --> PR
     BR -- "retries exhausted" --> ESC
 
@@ -63,9 +57,9 @@ flowchart TB
     classDef tool fill:#f1f5f9,stroke:#94a3b8,color:#334155
     classDef guard fill:#fff7ed,stroke:#fb923c,color:#7c2d12
 
-    class ORCH,RUNTIME,LLM,DBX,GH zone
-    class AF,COLLECT,BR,PR,HUMAN node
-    class T1,T2,T3,T4 tool
+    class ORCH,RUNTIME,DBX,GH zone
+    class AF,COLLECT,AGENT,BR,PR,HUMAN node
+    class TOOLS tool
     class PROD,ESC guard
 ```
 
