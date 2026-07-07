@@ -1,6 +1,6 @@
 """LangGraph StateGraph wiring: collect -> agent -> validate -> publish/retry/escalate."""
 
-from langgraph.graph import END, StateGraph
+from langgraph.graph import StateGraph
 from pydantic import BaseModel
 
 from pipemedic.models import FailureContext, Fix, ValidationResult
@@ -31,6 +31,5 @@ def build_graph() -> StateGraph:
     """Wire the nodes; node implementations live in their own modules."""
     from pipemedic import agent, collector, publisher, validator  # noqa: F401
 
-    graph = StateGraph(MedicState)
-    # ponytail: node fns not implemented yet — wired when modules land
+    # ponytail: node fns not implemented yet — wired when modules land (Task 8)
     raise NotImplementedError
