@@ -49,3 +49,69 @@ def test_validate_failure_returns_logs(tmp_path, monkeypatch):
     result = validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
     assert result.passed is False
     assert "boom" in result.logs
+
+
+def test_validate_iceberg_branch_wraps_build(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    calls = []
+
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
+    monkeypatch.setattr(
+        "pipemedic.branch.create_branch",
+        lambda table, settings: calls.append(("create", table)) or "pipemedic_fix",
+    )
+    monkeypatch.setattr(
+        "pipemedic.branch.drop_branch",
+        lambda table, branch, settings: calls.append(("drop", table, branch)),
+    )
+
+    result = validator.validate(
+        _fix(), str(project), "stg_orders", Settings(use_iceberg_branch=True, dev_schema="dev")
+    )
+    assert result.passed is True
+    assert result.branch_name == "pipemedic_fix"
+    assert calls == [
+        ("create", "dev.stg_orders"),
+        ("drop", "dev.stg_orders", "pipemedic_fix"),
+    ]
+
+
+def test_validate_drops_branch_on_build_failure(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    calls = []
+
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: (False, "boom"))
+    monkeypatch.setattr(
+        "pipemedic.branch.create_branch",
+        lambda table, settings: calls.append("create") or "pipemedic_fix",
+    )
+    monkeypatch.setattr(
+        "pipemedic.branch.drop_branch",
+        lambda table, branch, settings: calls.append("drop"),
+    )
+
+    result = validator.validate(
+        _fix(), str(project), "stg_orders", Settings(use_iceberg_branch=True, dev_schema="dev")
+    )
+    assert result.passed is False
+    assert calls == ["create", "drop"]
+
+
+def test_validate_restores_prior_env_var(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
+    monkeypatch.setenv("DBT_MEDIC_SCHEMA", "previous_value")
+
+    validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
+
+    assert os.environ.get("DBT_MEDIC_SCHEMA") == "previous_value"
+
+
+def test_validate_removes_env_var_if_previously_unset(tmp_path, monkeypatch):
+    project = _project(tmp_path)
+    monkeypatch.setattr(validator, "_run_dbt", lambda args: (True, "ok"))
+    monkeypatch.delenv("DBT_MEDIC_SCHEMA", raising=False)
+
+    validator.validate(_fix(), str(project), "stg_orders", Settings(use_iceberg_branch=False))
+
+    assert "DBT_MEDIC_SCHEMA" not in os.environ
