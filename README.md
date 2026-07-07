@@ -1,28 +1,28 @@
 # dbt-medic
 
-An autonomous "AI data engineer" that fixes broken dbt pipelines.
+An autonomous data engineering agent that fixes broken dbt pipelines
 
-When a dbt model fails in Airflow, dbt-medic root-causes the error, writes the
+When a dbt model fails in Apache Airflow, dbt-medic root-causes the error, writes the
 fix, proves it on an isolated Iceberg branch against real data, and opens a PR
 with the diff, a root-cause writeup, and passing tests. The human reviews and
-merges — the agent never touches prod.
+merges, andthe agent never touches prod: a win-win situation.
 
 ## How it works
 
-dbt-medic is a full AI agent, built as a **LangGraph state machine** around a
-tool-using Claude core. It doesn't run one prompt — it investigates, acts,
+dbt-medic is a full on AI agent, built as a **LangGraph state machine** around a
+tool, using Claude core. It doesn't just run one prompt, it investigates, acts,
 observes results, and self-corrects until the pipeline is green or it decides
 a human is needed.
 
-## Architecture
+## Architecture Diagram
 
 ```mermaid
 flowchart TB
-    subgraph ORCH ["Orchestration — Apache Airflow"]
+    subgraph ORCH ["Orchestration: Apache Airflow"]
         AF["dbt DAG task fails<br/>on_failure_callback triggers dbt-medic"]
     end
 
-    subgraph RUNTIME ["Agent runtime — LangGraph state machine"]
+    subgraph RUNTIME ["Agent runtime: LangGraph state machine"]
         direction TB
         COLLECT["collect<br/>error, compiled SQL, manifest,<br/>lineage, source schemas"]
 
@@ -37,13 +37,13 @@ flowchart TB
         COLLECT --> LLM
     end
 
-    subgraph DBX ["Warehouse — Databricks / Apache Iceberg"]
+    subgraph DBX ["Warehouse: Databricks / Apache Iceberg"]
         direction LR
         BR["validate<br/>dbt build + dbt test on<br/>isolated Iceberg branch"]
         PROD["prod tables<br/>never touched by the agent"]
     end
 
-    subgraph GH ["Delivery — GitHub"]
+    subgraph GH ["Delivery: GitHub"]
         direction LR
         PR["pull request<br/>diff, root-cause writeup, test proof"]
         HUMAN["human reviews and merges"]
@@ -70,9 +70,9 @@ flowchart TB
 ```
 
 **Key tech:** Apache Airflow (failure trigger) · dbt (models, build, tests) ·
-LangGraph (agent state machine, retry routing) · Claude / Anthropic API
+LangGraph (agent state machine, retry routing) · Anthropic API
 (tool-using reasoning core) · Databricks + Apache Iceberg (isolated
-write-audit-publish branches) · GitHub (PR delivery).
+write-audit-publish branches) · GitHub (PR delivery)
 
 - **collect** — gathers the failing model, compiled SQL, error text, dbt
   artifacts, and upstream lineage into a structured failure context.
@@ -100,4 +100,4 @@ from dbt_medic.airflow import on_failure_callback
 
 ## Status
 
-Early development — Databricks Fellowship project.
+Early development — Databricks Fellowship project
