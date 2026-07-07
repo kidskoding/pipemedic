@@ -82,15 +82,70 @@ write-audit-publish branches) · GitHub (PR delivery)
 
 ## Install
 
+Not on PyPI yet. Install from git, or clone and sync with `uv`:
+
 ```sh
-uv tool install pipemedic
+uv tool install git+https://github.com/kidskoding/pipemedic
 ```
 
-Then add the Airflow hook:
+```sh
+git clone https://github.com/kidskoding/pipemedic
+cd pipemedic
+uv sync
+```
+
+## Configuration
+
+Settings are read from environment variables, all prefixed `PIPEMEDIC_`:
+
+| Env var | Field | Default |
+| --- | --- | --- |
+| `PIPEMEDIC_ANTHROPIC_API_KEY` | `anthropic_api_key` | — |
+| `PIPEMEDIC_GITHUB_TOKEN` | `github_token` | — |
+| `PIPEMEDIC_GITHUB_REPO` | `github_repo` | — |
+| `PIPEMEDIC_DATABRICKS_HOST` | `databricks_host` | — |
+| `PIPEMEDIC_DATABRICKS_TOKEN` | `databricks_token` | — |
+| `PIPEMEDIC_DATABRICKS_WAREHOUSE_ID` | `databricks_warehouse_id` | — |
+| `PIPEMEDIC_DEV_SCHEMA` | `dev_schema` | `pipemedic_dev` |
+| `PIPEMEDIC_USE_ICEBERG_BRANCH` | `use_iceberg_branch` | `true` |
+| `PIPEMEDIC_MAX_RETRIES` | `max_retries` | `3` |
+
+## Usage
+
+### CLI
+
+```sh
+uv run pipemedic fix --model <failed_model> --project-dir <dbt_project>
+```
+
+Exit 0 with `PR opened: <url>` on success, exit 2 with an escalation message
+after retries are exhausted.
+
+### Airflow
+
+Opt in per-task by passing a `pipemedic` param and wiring the callback:
 
 ```python
 from pipemedic.airflow import on_failure_callback
+
+default_args = {"on_failure_callback": on_failure_callback}
+
+dbt_task = SomeOperator(
+    ...,
+    params={"pipemedic": {"model": "stg_orders", "project_dir": "/opt/dbt"}},
+)
 ```
+
+Tasks without a `pipemedic` param are left alone.
+
+### Evals
+
+```sh
+uv run python evals/run_evals.py
+```
+
+Runs the agent across the seeded broken-pipeline scenarios in `evals/` and
+reports % auto-fixed, mean retries to green, and a failure taxonomy.
 
 ## Status
 
