@@ -14,26 +14,42 @@ tool-using Claude core. It doesn't run one prompt — it investigates, acts,
 observes results, and self-corrects until the pipeline is green or it decides
 a human is needed.
 
-```
-                        ┌────────────────────────────────────┐
-Airflow failure ──────► │  collect                           │
-                        │     │                              │
-                        │     ▼                              │
-                        │  agent ◄────────────┐              │
-                        │   Claude + tools:   │ retry with   │
-                        │   read_file         │ validator    │
-                        │   get_schema        │ error        │
-                        │   run_sql           │ (max N)      │
-                        │   edit_file         │              │
-                        │     │               │              │
-                        │     ▼               │              │
-                        │  validate ── fail ──┤              │
-                        │   Iceberg branch    └── exhausted ─┼──► escalate
-                        │     │                              │    to human
-                        │    pass                            │
-                        │     ▼                              │
-                        │  publish ──► GitHub PR             │
-                        └────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A[/"🔥 Airflow: dbt model fails"/] --> B["📦 collect<br/><i>error, compiled SQL, lineage,<br/>manifest, source schema</i>"]
+    B --> C["🧠 agent — Claude tool-use loop"]
+
+    subgraph TOOLS ["agent tools"]
+        direction LR
+        T1(["read_file"])
+        T2(["get_schema"])
+        T3(["run_sql"])
+        T4(["edit_file"])
+    end
+
+    C <-.-> TOOLS
+    C -- "proposed fix" --> D{"🧪 validate<br/><i>dbt build + tests on isolated<br/>Iceberg branch — never prod</i>"}
+
+    D -- "✅ tests pass" --> E["🚀 publish<br/><i>GitHub PR: diff + root cause<br/>+ test proof</i>"]
+    D -- "❌ fail (attempt < 3)" --> R["feed error back"]
+    R --> C
+    D -- "❌ fail (retries exhausted)" --> F["🙋 escalate to human<br/><i>no guessing</i>"]
+
+    E --> G[/"👤 human reviews & merges"/]
+
+    style A fill:#7c2d12,stroke:#ea580c,color:#fff
+    style B fill:#1e3a8a,stroke:#3b82f6,color:#fff
+    style C fill:#4c1d95,stroke:#8b5cf6,color:#fff
+    style TOOLS fill:#2e1065,stroke:#8b5cf6,color:#ddd
+    style T1 fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style T2 fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style T3 fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style T4 fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style D fill:#713f12,stroke:#eab308,color:#fff
+    style E fill:#14532d,stroke:#22c55e,color:#fff
+    style F fill:#7f1d1d,stroke:#ef4444,color:#fff
+    style G fill:#14532d,stroke:#22c55e,color:#fff
+    style R fill:#450a0a,stroke:#f87171,color:#fff
 ```
 
 - **collect** — gathers the failing model, compiled SQL, error text, dbt
