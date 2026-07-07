@@ -14,7 +14,7 @@ class Settings(BaseModel):
     databricks_host: str = ""
     databricks_token: str = ""
     databricks_warehouse_id: str = ""
-    dev_schema: str = "dbt_medic_dev"
+    dev_schema: str = "pipemedic_dev"
     use_iceberg_branch: bool = True  # False -> dev-schema fallback
     max_retries: int = 3
 

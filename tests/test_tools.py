@@ -1,7 +1,7 @@
 import pytest
 
-from dbt_medic import tools
-from dbt_medic.config import Settings
+from pipemedic import tools
+from pipemedic.config import Settings
 
 
 @pytest.fixture()

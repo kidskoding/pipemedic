@@ -2,13 +2,13 @@
 
 from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
 
-from dbt_medic import tools
-from dbt_medic.config import Settings
-from dbt_medic.models import FailureContext, FileEdit, Fix
+from pipemedic import tools
+from pipemedic.config import Settings
+from pipemedic.models import FailureContext, FileEdit, Fix
 
 MAX_TURNS = 30
 
-SYSTEM = """You are dbt-medic, an autonomous data engineer fixing a failed dbt model.
+SYSTEM = """You are pipemedic, an autonomous data engineer fixing a failed dbt model.
 
 Investigate with your tools (read_file, get_schema, run_sql), then stage the
 minimal fix with edit_file and finish by calling submit_fix with your

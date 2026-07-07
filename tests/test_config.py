@@ -1,4 +1,4 @@
-from dbt_medic.config import Settings
+from pipemedic.config import Settings
 
 
 def test_from_env(monkeypatch):

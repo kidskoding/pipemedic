@@ -1,6 +1,6 @@
 """Smallest check that the shared types hold their contract."""
 
-from dbt_medic.models import FailureContext, FileEdit, Fix, ValidationResult
+from pipemedic.models import FailureContext, FileEdit, Fix, ValidationResult
 
 
 def test_types_roundtrip():

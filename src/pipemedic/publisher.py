@@ -1,6 +1,6 @@
 """Publisher: validated Fix + proof -> GitHub PR."""
 
-from dbt_medic.models import Fix, ValidationResult
+from pipemedic.models import Fix, ValidationResult
 
 
 def open_pr(fix: Fix, proof: ValidationResult, repo: str) -> str:

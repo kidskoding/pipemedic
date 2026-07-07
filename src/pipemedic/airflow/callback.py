@@ -2,5 +2,5 @@
 
 
 def on_failure_callback(context: dict) -> None:
-    """Airflow task-failure hook: extract the failed dbt model and run dbt-medic."""
+    """Airflow task-failure hook: extract the failed dbt model and run pipemedic."""
     raise NotImplementedError

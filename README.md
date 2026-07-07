@@ -1,15 +1,15 @@
-# dbt-medic
+# pipemedic
 
 An autonomous data engineering agent that fixes broken dbt pipelines
 
-When a dbt model fails in Apache Airflow, dbt-medic root-causes the error, writes the
+When a dbt model fails in Apache Airflow, pipemedic root-causes the error, writes the
 fix, proves it on an isolated Iceberg branch against real data, and opens a PR
 with the diff, a root-cause writeup, and passing tests. The human reviews and
 merges, andthe agent never touches prod: a win-win situation.
 
 ## How it works
 
-dbt-medic is a full on AI agent, built as a **LangGraph state machine** around a
+pipemedic is a full on AI agent, built as a **LangGraph state machine** around a
 tool, using Claude core. It doesn't just run one prompt, it investigates, acts,
 observes results, and self-corrects until the pipeline is green or it decides
 a human is needed.
@@ -19,7 +19,7 @@ a human is needed.
 ```mermaid
 flowchart TB
     subgraph ORCH ["Orchestration: Apache Airflow"]
-        AF["dbt DAG task fails<br/>on_failure_callback triggers dbt-medic"]
+        AF["dbt DAG task fails<br/>on_failure_callback triggers pipemedic"]
     end
 
     subgraph RUNTIME ["Agent runtime: LangGraph state machine"]
@@ -89,13 +89,13 @@ write-audit-publish branches) · GitHub (PR delivery)
 ## Install
 
 ```sh
-uv tool install dbt-medic
+uv tool install pipemedic
 ```
 
 Then add the Airflow hook:
 
 ```python
-from dbt_medic.airflow import on_failure_callback
+from pipemedic.airflow import on_failure_callback
 ```
 
 ## Status

@@ -5,8 +5,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from dbt_medic.config import Settings
-from dbt_medic.models import Fix, ValidationResult
+from pipemedic.config import Settings
+from pipemedic.models import Fix, ValidationResult
 
 
 def _run_dbt(args: list[str]) -> tuple[bool, str]:
@@ -26,7 +26,7 @@ def _run_dbt(args: list[str]) -> tuple[bool, str]:
 
 def validate(fix: Fix, project_dir: str, model_name: str, settings: Settings) -> ValidationResult:
     """Apply edits to a temp copy of the project, dbt build the model + tests there."""
-    with tempfile.TemporaryDirectory(prefix="dbt-medic-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="pipemedic-") as tmp:
         work = Path(tmp) / "project"
         shutil.copytree(project_dir, work, ignore=shutil.ignore_patterns("target", ".git"))
         for edit in fix.edits:

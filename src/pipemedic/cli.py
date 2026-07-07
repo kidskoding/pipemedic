@@ -1,10 +1,10 @@
-"""CLI entrypoint: `dbt-medic fix --model X --project-dir .`"""
+"""CLI entrypoint: `pipemedic fix --model X --project-dir .`"""
 
 import argparse
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog="dbt-medic")
+    parser = argparse.ArgumentParser(prog="pipemedic")
     sub = parser.add_subparsers(dest="command", required=True)
     fix = sub.add_parser("fix", help="diagnose and fix a failed dbt model")
     fix.add_argument("--model", required=True)

@@ -1,8 +1,8 @@
 import os
 
-from dbt_medic import validator
-from dbt_medic.config import Settings
-from dbt_medic.models import FileEdit, Fix, ValidationResult
+from pipemedic import validator
+from pipemedic.config import Settings
+from pipemedic.models import FileEdit, Fix, ValidationResult
 
 
 def _fix():
@@ -38,7 +38,7 @@ def test_validate_applies_edits_and_builds(tmp_path, monkeypatch):
     assert result.passed is True
     assert seen["edited"] == "select 2"
     assert seen["select"] == "stg_orders"
-    assert seen["schema"] == "dbt_medic_dev"
+    assert seen["schema"] == "pipemedic_dev"
     # original untouched
     assert (project / "models" / "stg_orders.sql").read_text() == "select 1"
 

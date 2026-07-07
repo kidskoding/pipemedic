@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from dbt_medic.collector import CollectorError, collect
+from pipemedic.collector import CollectorError, collect
 
 MANIFEST = {
     "metadata": {"project_name": "warehouse"},

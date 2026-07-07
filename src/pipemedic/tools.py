@@ -8,7 +8,7 @@ from pathlib import Path
 
 from langchain_core.tools import tool
 
-from dbt_medic.config import Settings
+from pipemedic.config import Settings
 
 _ctx: dict = {"project_dir": None, "settings": None, "staged": {}}
 

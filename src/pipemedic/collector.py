@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from dbt_medic.models import FailureContext
+from pipemedic.models import FailureContext
 
 
 class CollectorError(Exception):

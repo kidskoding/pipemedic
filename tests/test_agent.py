@@ -1,9 +1,9 @@
 import pytest
 from langchain_core.messages import AIMessage
 
-from dbt_medic import agent, tools
-from dbt_medic.config import Settings
-from dbt_medic.models import FailureContext
+from pipemedic import agent, tools
+from pipemedic.config import Settings
+from pipemedic.models import FailureContext
 
 
 class FakeLLM:

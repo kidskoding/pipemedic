@@ -3,7 +3,7 @@
 from langgraph.graph import END, StateGraph
 from pydantic import BaseModel
 
-from dbt_medic.models import FailureContext, Fix, ValidationResult
+from pipemedic.models import FailureContext, Fix, ValidationResult
 
 
 class MedicState(BaseModel):
@@ -29,7 +29,7 @@ def _route_after_validate(state: MedicState) -> str:
 
 def build_graph() -> StateGraph:
     """Wire the nodes; node implementations live in their own modules."""
-    from dbt_medic import agent, collector, publisher, validator  # noqa: F401
+    from pipemedic import agent, collector, publisher, validator  # noqa: F401
 
     graph = StateGraph(MedicState)
     # ponytail: node fns not implemented yet — wired when modules land
