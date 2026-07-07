@@ -1,0 +1,3 @@
+class: schema_drift
+must_touch:
+  - models/stg_orders.sql

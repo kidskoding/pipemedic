@@ -14,6 +14,7 @@ dependencies = [
     "dbt-core",
     "dbt-databricks",
     "databricks-sdk",
+    "pyyaml",
 ]
 
 [project.scripts]

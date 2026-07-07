@@ -1,0 +1,4 @@
+name: eval_warehouse
+version: "1.0"
+profile: eval_warehouse
+model-paths: ["models"]

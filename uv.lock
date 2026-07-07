@@ -1430,6 +1430,7 @@ dependencies = [
     { name = "langgraph" },
     { name = "pydantic" },
     { name = "pygithub" },
+    { name = "pyyaml" },
 ]
 
 [package.dev-dependencies]
@@ -1449,6 +1450,7 @@ requires-dist = [
     { name = "langgraph" },
     { name = "pydantic" },
     { name = "pygithub" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata.requires-dev]
