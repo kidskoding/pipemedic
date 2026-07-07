@@ -74,7 +74,10 @@ def propose_fix(context: FailureContext, project_dir: str, settings: Settings) -
                     explanation=call["args"].get("explanation", ""),
                 )
             if call["name"] in _EXECUTABLE:
-                result = tools.__dict__[call["name"]].invoke(call["args"])
+                try:
+                    result = tools.__dict__[call["name"]].invoke(call["args"])
+                except Exception as e:
+                    result = f"ERROR: {type(e).__name__}: {e}"
             else:
                 result = f"ERROR: unknown tool {call['name']}"
             messages.append(ToolMessage(content=str(result), tool_call_id=call["id"]))

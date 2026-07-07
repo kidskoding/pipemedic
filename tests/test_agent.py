@@ -52,6 +52,34 @@ def test_agent_stages_edit_then_submits(tmp_path, monkeypatch):
     assert fix.edits[0].new_content == "select amount_usd as amount from t"
 
 
+def test_agent_recovers_from_tool_exception(tmp_path, monkeypatch):
+    def _boom(_query):
+        raise RuntimeError("warehouse down")
+
+    monkeypatch.setattr(tools, "_execute_sql", _boom)
+    script = [
+        AIMessage(
+            content="",
+            tool_calls=[
+                {"name": "run_sql", "args": {"query": "select 1"}, "id": "1"},
+            ],
+        ),
+        AIMessage(
+            content="",
+            tool_calls=[
+                {
+                    "name": "submit_fix",
+                    "args": {"root_cause": "ESCALATE: could not query warehouse", "explanation": ""},
+                    "id": "2",
+                },
+            ],
+        ),
+    ]
+    monkeypatch.setattr(agent, "_make_llm", lambda settings: FakeLLM(script))
+    fix = agent.propose_fix(_ctx(), str(tmp_path), Settings())
+    assert fix.root_cause.startswith("ESCALATE:")
+
+
 def test_agent_gives_up_after_max_turns(tmp_path, monkeypatch):
     forever = [AIMessage(content="hmm", tool_calls=[])] * 31
     monkeypatch.setattr(agent, "_make_llm", lambda settings: FakeLLM(forever))
