@@ -1,0 +1,27 @@
+[project]
+name = "dbt-medic"
+version = "0.1.0"
+description = "Autonomous AI data engineer that fixes broken dbt pipelines and opens PRs with validated fixes"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic",
+    "pydantic",
+    "PyGithub",
+    "dbt-core",
+    "dbt-databricks",
+    "databricks-sdk",
+]
+
+[project.scripts]
+dbt-medic = "dbt_medic.cli:main"
+
+[dependency-groups]
+dev = ["pytest"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dbt_medic"]
