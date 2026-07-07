@@ -18,78 +18,55 @@ a human is needed.
 
 ```mermaid
 flowchart TB
-    subgraph SYS ["dbt-medic — autonomous dbt pipeline repair"]
-        direction TB
-
-        subgraph ORCH ["⏱️ Apache Airflow — orchestration"]
-            AF["🔥 dbt DAG task fails<br/><i>on_failure_callback → dbt-medic</i>"]
-        end
-
-        subgraph RUNTIME ["🧠 Agent runtime — LangGraph state machine"]
-            direction TB
-            COLLECT["📦 collect<br/><i>error, compiled SQL, manifest,<br/>lineage, source schemas</i>"]
-
-            subgraph LLM ["Claude (Anthropic API) — tool-use loop"]
-                direction TB
-                CORE["reasoning core<br/><i>root-cause → stage fix</i>"]
-                subgraph TOOLS ["tools"]
-                    direction LR
-                    T1(["read_file"])
-                    T2(["get_schema"])
-                    T3(["run_sql"])
-                    T4(["edit_file"])
-                end
-                CORE <-.-> TOOLS
-            end
-
-            COLLECT --> LLM
-        end
-
-        subgraph DBX ["🗄️ Databricks — warehouse"]
-            direction TB
-            subgraph ICE ["Apache Iceberg catalog"]
-                direction LR
-                BR["🧪 isolated branch<br/><i>dbt build + dbt test<br/>on real data</i>"]
-                PROD["🔒 prod tables<br/><i>never touched</i>"]
-            end
-        end
-
-        subgraph GH ["🚀 GitHub — delivery"]
-            direction TB
-            PR["PR: diff + root-cause<br/>writeup + test proof"]
-            HUMAN["👤 human reviews & merges"]
-            PR --> HUMAN
-        end
-
-        ESC["🙋 escalate to human<br/><i>no guessing</i>"]
-
-        AF --> COLLECT
-        LLM -- "proposed fix" --> BR
-        BR -- "❌ fail (attempt < 3)<br/>error fed back" --> LLM
-        BR -- "✅ tests pass" --> PR
-        BR -- "❌ retries exhausted" --> ESC
+    subgraph ORCH ["Orchestration — Apache Airflow"]
+        AF["dbt DAG task fails<br/>on_failure_callback triggers dbt-medic"]
     end
 
-    style SYS fill:#0b1120,stroke:#475569,color:#e2e8f0
-    style ORCH fill:#431407,stroke:#ea580c,color:#fed7aa
-    style AF fill:#7c2d12,stroke:#fb923c,color:#fff
-    style RUNTIME fill:#1e1b4b,stroke:#6366f1,color:#c7d2fe
-    style COLLECT fill:#312e81,stroke:#818cf8,color:#fff
-    style LLM fill:#2e1065,stroke:#8b5cf6,color:#ddd6fe
-    style CORE fill:#4c1d95,stroke:#a78bfa,color:#fff
-    style TOOLS fill:#3b0764,stroke:#a78bfa,color:#e9d5ff
-    style T1 fill:#4c1d95,stroke:#c4b5fd,color:#fff
-    style T2 fill:#4c1d95,stroke:#c4b5fd,color:#fff
-    style T3 fill:#4c1d95,stroke:#c4b5fd,color:#fff
-    style T4 fill:#4c1d95,stroke:#c4b5fd,color:#fff
-    style DBX fill:#422006,stroke:#eab308,color:#fef08a
-    style ICE fill:#713f12,stroke:#facc15,color:#fef9c3
-    style BR fill:#854d0e,stroke:#fde047,color:#fff
-    style PROD fill:#450a0a,stroke:#f87171,color:#fecaca
-    style GH fill:#052e16,stroke:#22c55e,color:#bbf7d0
-    style PR fill:#14532d,stroke:#4ade80,color:#fff
-    style HUMAN fill:#166534,stroke:#86efac,color:#fff
-    style ESC fill:#7f1d1d,stroke:#ef4444,color:#fff
+    subgraph RUNTIME ["Agent runtime — LangGraph state machine"]
+        direction TB
+        COLLECT["collect<br/>error, compiled SQL, manifest,<br/>lineage, source schemas"]
+
+        subgraph LLM ["Claude (Anthropic API) — tool-use loop"]
+            direction LR
+            T1(["read_file"])
+            T2(["get_schema"])
+            T3(["run_sql"])
+            T4(["edit_file"])
+        end
+
+        COLLECT --> LLM
+    end
+
+    subgraph DBX ["Warehouse — Databricks / Apache Iceberg"]
+        direction LR
+        BR["validate<br/>dbt build + dbt test on<br/>isolated Iceberg branch"]
+        PROD["prod tables<br/>never touched by the agent"]
+    end
+
+    subgraph GH ["Delivery — GitHub"]
+        direction LR
+        PR["pull request<br/>diff, root-cause writeup, test proof"]
+        HUMAN["human reviews and merges"]
+        PR --> HUMAN
+    end
+
+    ESC["escalate to human"]
+
+    AF --> COLLECT
+    LLM -- "proposed fix" --> BR
+    BR -- "fail (attempt < 3), error fed back" --> LLM
+    BR -- "tests pass" --> PR
+    BR -- "retries exhausted" --> ESC
+
+    classDef zone fill:#f8fafc,stroke:#94a3b8,color:#334155
+    classDef node fill:#ffffff,stroke:#64748b,color:#1e293b
+    classDef tool fill:#f1f5f9,stroke:#94a3b8,color:#334155
+    classDef guard fill:#fff7ed,stroke:#fb923c,color:#7c2d12
+
+    class ORCH,RUNTIME,LLM,DBX,GH zone
+    class AF,COLLECT,BR,PR,HUMAN node
+    class T1,T2,T3,T4 tool
+    class PROD,ESC guard
 ```
 
 **Key tech:** Apache Airflow (failure trigger) · dbt (models, build, tests) ·
