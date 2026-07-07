@@ -2,6 +2,8 @@ from pipemedic import graph
 from pipemedic.config import Settings
 from pipemedic.models import FailureContext, FileEdit, Fix, ValidationResult
 
+
+
 FIX = Fix(edits=[FileEdit(path="m.sql", new_content="x")], root_cause="rc", explanation="ex")
 CTX = FailureContext(model_name="stg_orders", error_message="boom")
 
@@ -39,3 +41,22 @@ def test_escalates_after_max_retries(monkeypatch):
     final = graph.run_fix("/proj", "stg_orders", Settings(max_retries=3))
     assert final.pr_url is None
     assert final.attempts == 3
+
+
+def test_escalate_fast_path_skips_validate(monkeypatch):
+    escalate_fix = Fix(
+        edits=[], root_cause="ESCALATE: needs business judgment", explanation="ex"
+    )
+    monkeypatch.setattr(graph, "_collect", lambda pd, mn: CTX)
+    monkeypatch.setattr(graph, "_propose_fix", lambda ctx, pd, s: escalate_fix)
+    validate_calls = []
+    monkeypatch.setattr(
+        graph, "_validate", lambda fix, pd, mn, s: validate_calls.append(1) or ValidationResult(passed=True, logs="")
+    )
+    monkeypatch.setattr(graph, "_open_pr", lambda fix, proof, mn, s: "https://x/pull/1")
+
+    final = graph.run_fix("/proj", "stg_orders", Settings())
+
+    assert final.pr_url is None
+    assert final.attempts == 0
+    assert validate_calls == []

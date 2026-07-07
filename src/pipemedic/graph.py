@@ -24,6 +24,12 @@ class MedicState(BaseModel):
     pr_url: str | None = None
 
 
+def _route_after_agent(state: MedicState) -> str:
+    if state.fix and state.fix.root_cause.startswith("ESCALATE:"):
+        return "escalate"
+    return "validate"
+
+
 def _route_after_validate(state: MedicState) -> str:
     if state.validation and state.validation.passed:
         return "publish"
@@ -54,7 +60,8 @@ def build_graph(settings: Settings):
 
     def escalate_node(state: MedicState) -> dict:
         # ponytail: escalation = log + no PR; notification hook is v2
-        print(f"pipemedic: escalating {state.model_name} after {state.attempts} attempts")
+        reason = f" — {state.fix.root_cause}" if state.fix and state.fix.root_cause else ""
+        print(f"pipemedic: escalating {state.model_name} after {state.attempts} attempts{reason}")
         return {}
 
     g = StateGraph(MedicState)
@@ -65,7 +72,7 @@ def build_graph(settings: Settings):
     g.add_node("escalate", escalate_node)
     g.set_entry_point("collect")
     g.add_edge("collect", "agent")
-    g.add_edge("agent", "validate")
+    g.add_conditional_edges("agent", _route_after_agent)
     g.add_conditional_edges("validate", _route_after_validate)
     g.add_edge("publish", END)
     g.add_edge("escalate", END)
