@@ -8,6 +8,7 @@ dependencies = [
     "langgraph",
     "langchain-anthropic",
     "langchain-core",
+    "anthropic",
     "pydantic",
     "PyGithub",
     "dbt-core",
