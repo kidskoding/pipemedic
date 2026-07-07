@@ -5,7 +5,9 @@ description = "Autonomous AI data engineer that fixes broken dbt pipelines and o
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "anthropic",
+    "langgraph",
+    "langchain-anthropic",
+    "langchain-core",
     "pydantic",
     "PyGithub",
     "dbt-core",
