@@ -14,43 +14,88 @@ tool-using Claude core. It doesn't run one prompt — it investigates, acts,
 observes results, and self-corrects until the pipeline is green or it decides
 a human is needed.
 
-```mermaid
-flowchart TD
-    A[/"🔥 Airflow: dbt model fails"/] --> B["📦 collect<br/><i>error, compiled SQL, lineage,<br/>manifest, source schema</i>"]
-    B --> C["🧠 agent — Claude tool-use loop"]
+## Architecture
 
-    subgraph TOOLS ["agent tools"]
-        direction LR
-        T1(["read_file"])
-        T2(["get_schema"])
-        T3(["run_sql"])
-        T4(["edit_file"])
+```mermaid
+flowchart TB
+    subgraph SYS ["dbt-medic — autonomous dbt pipeline repair"]
+        direction TB
+
+        subgraph ORCH ["⏱️ Apache Airflow — orchestration"]
+            AF["🔥 dbt DAG task fails<br/><i>on_failure_callback → dbt-medic</i>"]
+        end
+
+        subgraph RUNTIME ["🧠 Agent runtime — LangGraph state machine"]
+            direction TB
+            COLLECT["📦 collect<br/><i>error, compiled SQL, manifest,<br/>lineage, source schemas</i>"]
+
+            subgraph LLM ["Claude (Anthropic API) — tool-use loop"]
+                direction TB
+                CORE["reasoning core<br/><i>root-cause → stage fix</i>"]
+                subgraph TOOLS ["tools"]
+                    direction LR
+                    T1(["read_file"])
+                    T2(["get_schema"])
+                    T3(["run_sql"])
+                    T4(["edit_file"])
+                end
+                CORE <-.-> TOOLS
+            end
+
+            COLLECT --> LLM
+        end
+
+        subgraph DBX ["🗄️ Databricks — warehouse"]
+            direction TB
+            subgraph ICE ["Apache Iceberg catalog"]
+                direction LR
+                BR["🧪 isolated branch<br/><i>dbt build + dbt test<br/>on real data</i>"]
+                PROD["🔒 prod tables<br/><i>never touched</i>"]
+            end
+        end
+
+        subgraph GH ["🚀 GitHub — delivery"]
+            direction TB
+            PR["PR: diff + root-cause<br/>writeup + test proof"]
+            HUMAN["👤 human reviews & merges"]
+            PR --> HUMAN
+        end
+
+        ESC["🙋 escalate to human<br/><i>no guessing</i>"]
+
+        AF --> COLLECT
+        LLM -- "proposed fix" --> BR
+        BR -- "❌ fail (attempt < 3)<br/>error fed back" --> LLM
+        BR -- "✅ tests pass" --> PR
+        BR -- "❌ retries exhausted" --> ESC
     end
 
-    C <-.-> TOOLS
-    C -- "proposed fix" --> D{"🧪 validate<br/><i>dbt build + tests on isolated<br/>Iceberg branch — never prod</i>"}
-
-    D -- "✅ tests pass" --> E["🚀 publish<br/><i>GitHub PR: diff + root cause<br/>+ test proof</i>"]
-    D -- "❌ fail (attempt < 3)" --> R["feed error back"]
-    R --> C
-    D -- "❌ fail (retries exhausted)" --> F["🙋 escalate to human<br/><i>no guessing</i>"]
-
-    E --> G[/"👤 human reviews & merges"/]
-
-    style A fill:#7c2d12,stroke:#ea580c,color:#fff
-    style B fill:#1e3a8a,stroke:#3b82f6,color:#fff
-    style C fill:#4c1d95,stroke:#8b5cf6,color:#fff
-    style TOOLS fill:#2e1065,stroke:#8b5cf6,color:#ddd
-    style T1 fill:#4c1d95,stroke:#a78bfa,color:#fff
-    style T2 fill:#4c1d95,stroke:#a78bfa,color:#fff
-    style T3 fill:#4c1d95,stroke:#a78bfa,color:#fff
-    style T4 fill:#4c1d95,stroke:#a78bfa,color:#fff
-    style D fill:#713f12,stroke:#eab308,color:#fff
-    style E fill:#14532d,stroke:#22c55e,color:#fff
-    style F fill:#7f1d1d,stroke:#ef4444,color:#fff
-    style G fill:#14532d,stroke:#22c55e,color:#fff
-    style R fill:#450a0a,stroke:#f87171,color:#fff
+    style SYS fill:#0b1120,stroke:#475569,color:#e2e8f0
+    style ORCH fill:#431407,stroke:#ea580c,color:#fed7aa
+    style AF fill:#7c2d12,stroke:#fb923c,color:#fff
+    style RUNTIME fill:#1e1b4b,stroke:#6366f1,color:#c7d2fe
+    style COLLECT fill:#312e81,stroke:#818cf8,color:#fff
+    style LLM fill:#2e1065,stroke:#8b5cf6,color:#ddd6fe
+    style CORE fill:#4c1d95,stroke:#a78bfa,color:#fff
+    style TOOLS fill:#3b0764,stroke:#a78bfa,color:#e9d5ff
+    style T1 fill:#4c1d95,stroke:#c4b5fd,color:#fff
+    style T2 fill:#4c1d95,stroke:#c4b5fd,color:#fff
+    style T3 fill:#4c1d95,stroke:#c4b5fd,color:#fff
+    style T4 fill:#4c1d95,stroke:#c4b5fd,color:#fff
+    style DBX fill:#422006,stroke:#eab308,color:#fef08a
+    style ICE fill:#713f12,stroke:#facc15,color:#fef9c3
+    style BR fill:#854d0e,stroke:#fde047,color:#fff
+    style PROD fill:#450a0a,stroke:#f87171,color:#fecaca
+    style GH fill:#052e16,stroke:#22c55e,color:#bbf7d0
+    style PR fill:#14532d,stroke:#4ade80,color:#fff
+    style HUMAN fill:#166534,stroke:#86efac,color:#fff
+    style ESC fill:#7f1d1d,stroke:#ef4444,color:#fff
 ```
+
+**Key tech:** Apache Airflow (failure trigger) · dbt (models, build, tests) ·
+LangGraph (agent state machine, retry routing) · Claude / Anthropic API
+(tool-using reasoning core) · Databricks + Apache Iceberg (isolated
+write-audit-publish branches) · GitHub (PR delivery).
 
 - **collect** — gathers the failing model, compiled SQL, error text, dbt
   artifacts, and upstream lineage into a structured failure context.
