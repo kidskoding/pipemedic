@@ -14,6 +14,17 @@ from pipemedic.graph import run_fix
 EVALS = Path(__file__).parent
 
 
+def _prepare(project: Path) -> None:
+    """Run `dbt build` once against the (broken) seeded project so it fails and
+    produces the target/ artifacts (manifest, run_results) the collector reads.
+    A real dbt failure is expected here — we ignore the result and only care
+    that the artifacts exist on disk before run_fix's collect step runs.
+    """
+    from pipemedic.validator import _run_dbt
+
+    _run_dbt(["build", "--project-dir", str(project), "--profiles-dir", str(project)])
+
+
 def score_scenario(scenario_dir: Path, settings) -> dict:
     expected = yaml.safe_load((scenario_dir / "expected.yml").read_text())
     with tempfile.TemporaryDirectory() as tmp:
@@ -22,6 +33,7 @@ def score_scenario(scenario_dir: Path, settings) -> dict:
         patch = scenario_dir / "breakage.patch"
         if patch.read_text().strip():
             subprocess.run(["git", "apply", str(patch.resolve())], cwd=project, check=True)
+        _prepare(project)
         final = run_fix(str(project), "stg_orders", settings)
     return {
         "id": scenario_dir.name,

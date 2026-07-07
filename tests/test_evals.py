@@ -8,6 +8,7 @@ from pipemedic.graph import MedicState  # noqa: E402
 
 
 def test_score_scenario_counts_fix(monkeypatch):
+    monkeypatch.setattr(run_evals, "_prepare", lambda project: None)
     monkeypatch.setattr(
         run_evals,
         "run_fix",
